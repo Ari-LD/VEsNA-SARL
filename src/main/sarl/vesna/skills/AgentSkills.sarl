@@ -8,7 +8,6 @@ import vesna.events.RequestGrab
 import vesna.office.OfficeMap
 import vesna.events.RequestTask
 import vesna.events.TaskCompleted
-import vesna.events.CupRemoval
 
 import io.sarl.api.core.DefaultContextInteractions
 import io.sarl.api.core.Logging
@@ -106,8 +105,11 @@ skill AgentNavigation implements OfficeNavigation {
 skill AgentWork implements OfficeWork {
 	uses Logging, OfficeNavigation, Schedules, DefaultContextInteractions, Behaviors
 
+	var coffeeAmount : int = 0
+	
 	val assignedDesk : String
 	var cup : String
+	
 	new (desk : String, cup : String) {
 		this.assignedDesk = desk
 		this.cup = cup
@@ -116,9 +118,18 @@ skill AgentWork implements OfficeWork {
 	def getAssignedDesk : String {
 		this.assignedDesk
 	}
-	
-	on CupRemoval {
+
+	def setCup(cup : String) {
 		this.cup = null
+	}
+
+	def getCoffeeAmount : int {
+		this.coffeeAmount
+	}
+
+	def setCoffeeAmount(refill : int) {
+		this.coffeeAmount = Math.max(0, this.coffeeAmount + refill)
+		info("changing coffee amount to " + this.coffeeAmount)
 	}
 	
 	/**
@@ -128,7 +139,12 @@ skill AgentWork implements OfficeWork {
 	def work {
 		if (isAtDesk) {
 			info("I am working...")
-			in(2000) [
+			val workTime = Math.max(100, getCoffeeAmount*500)
+			
+			in(workTime) [
+				if (hasSkill(OfficeCoffee) && this.cup !== null) {
+					setCoffeeAmount(-4)
+				}
 				printStuff("Stuff")
 			]
 		}
@@ -140,7 +156,7 @@ skill AgentWork implements OfficeWork {
 			in(4000) [
 				info("Printed!")
 
-				if (this.cup !== null) {
+				if (this.cup !== null && getCoffeeAmount <= 0) {
 					wake(new RequestTask("COFFEE", "coffee_machine"))
 				} else {
 					wake(new TaskCompleted("WORK"))
@@ -207,6 +223,7 @@ skill AgentCoffee implements OfficeCoffee {
 		
 		if (getCurrentLoc() == "coffee_machine") {
 			getMachine.make_coffee(getCup)
+			setCoffeeAmount(10 - getCoffeeAmount) //amount + x = 10, this should always refill the variable to 10
 			//not sure if there's a way to check for the end of the artifact's animation
 			in(5000) [
 				wake(new RequestTask("WORK", getAssignedDesk))

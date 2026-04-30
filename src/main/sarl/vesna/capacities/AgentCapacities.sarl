@@ -20,6 +20,11 @@ capacity OfficeNavigation {
 capacity OfficeWork {
 	def getAssignedDesk : String
 	
+	def setCup(cup : String)
+
+	def getCoffeeAmount : int
+	def setCoffeeAmount(refill : int)
+	
 	def work
 
 	def printStuff(content : String)

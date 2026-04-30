@@ -19,7 +19,6 @@ import vesna.events.RegisterAgent
 import vesna.events.CupValidation
 import vesna.events.RequestTask
 import vesna.events.TaskCompleted
-import vesna.events.CupRemoval
 
 abstract agent Officer {
 	uses Behaviors, Logging, OfficeNavigation, OfficeWork, OfficeCoffee, DefaultContextInteractions, Schedules
@@ -64,7 +63,7 @@ abstract agent Officer {
 	on CupValidation [this.myCup !== null && occurrence.cup == this.myCup && occurrence.isAvailable == false] {
 		info("my cup doesn't exist")
 		
-		wake(new CupRemoval())
+		setCup(null)
 	}
 
 	//this event relies on godot sending back the agent's name/id to work correctly

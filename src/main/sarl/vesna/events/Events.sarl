@@ -37,7 +37,7 @@ event RegisterAgent {
 	}
 }
 
-// needs a better name, to call the methods of the current task
+// needs a better name, used to call the methods of the current task
 event TaskCompleted {
 	val taskName : String
 	
@@ -97,5 +97,3 @@ event CupValidation {
 		this.machine = machine
 	}
 }
-
-event CupRemoval {}
