@@ -1,6 +1,6 @@
 # VEsNA-light
 
-VEsNA is a framework that enables JaCaMo agents to be embodied inside a virtual environment. This repository contains the bridge between agent minds and agent bodies.
+VEsNA-SARL is a framework that enables SARL agents to be embodied inside a virtual environment. This repository contains the bridge between agent minds and agent bodies. VEsNA-SARL was built to extend VEsNA from the single use of JaCaMo agents to allow the use of SARL agents (and both together) as well.
 
 ![](./docs/vesna.gif)
 
@@ -10,59 +10,19 @@ VEsNA is a framework that enables JaCaMo agents to be embodied inside a virtual 
 >
 > **Requirements**
 >
-> - Java  23 (if you change version remember to change it in the `build.gradle` file);
+> - Java  21;
 > - Gradle (tested with version 8);
-> - Godot 4.
+> - Godot 4;
+> - SARL 0.15.1 .
 
-The framework provides:
+### Making a VEsNA agent in SARL
 
-- a total new set of actions for spatial reasoning;
-- a fully working playground environment implemented in Godot.
+Create a new .sarl agent for the physical body of the new agent, the agent should extend Officer.sarl, refer to agents Alice.sarl, Bob.sarl and so on.
+Once done you may change Officer.sarl's methods however you please to change the way the agent will act.
 
-### Making a VEsNA agent on JaCaMo
+Note that most of the agent's skills are in the Skill file so if you want to drastically change something you may want to create a new skill (in a separate file or the same one) that extends an already existing one to change the methods and then install that skill to your agent
 
-In your `.jcm` file insert the new agent:
-
-```
-mas your_mas {
-	
-	agent bob:bob.asl {
-		beliefs:	address( localhost )
-					port( 9080 )
-		ag-class:	vesna.VesnaAgent
-	}
-
-}
-```
-
-The new Agent class `VesnaAgent` creates a connection between each agent and its body. The body implements a server with an address and a port, the agent should place these two data inside the beliefs.
-
-Inside your agent file you should include the `vesna.asl` file and, if you want, the playground files:
-
-```
-include{ ( "vesna.asl" ) }
-include{ ( "playgrounds/office.asl" ) }
-```
-
-The vesna file provides plans:
-
-- `go_to( Target )`: makes the agent move to the target;
-- `follow_path( [ Path ] )`: makes the agent follow a path.
-
-These plans make the agent reason with Region Connection Calculus (RCC). A map of the environment in RCC is given in the playground folder.
-
-Additionally, the vesna agent has three new `DefaultInternalAction`s:
-
-- `vesna.walk()`: can be used with different parameters.
-  - without parameters: makes a step;
-  - with a number `n`: makes a step of length n;
-  - with a literal `target`: moves to the target;
-  - with a literal `target` and a number `id`: moves to the target with id.
-- `vesna.rotate()`: can be used with different parameters.
-  - with a direction (`left`, `right`, `backward`, `forward`) to rotate in that direction;
-  - with a literal `target` to look at target;
-  - with a literal `target` and an `id` to look at target with id.
-- `vesna.jump()`: makes a jump.
+The agent class BridgeAgent creates a connection between each agent and its body. The body implements a server with an address and a port.
 
 ### Making the VEsNA agent body
 
@@ -84,9 +44,9 @@ The `sender` is set to the agent name in the mas. `msg_type` can be `walk`, `rot
 
 Jump action has an empty data field.
 
-#### Walk message data
+Really only `walk` is used by SARL agents.
 
-A walk message can have two types: `goto` or `step`.
+#### Walk message data
 
 The data field for `goto` is:
 
@@ -98,43 +58,22 @@ The data field for `goto` is:
 }
 ```
 
-The data field for `step` is:
-
-``` json
-{
-    type: "step",
-    length: 2 [optional]
-}
-```
-
-#### Rotate message data
-
-A rotate message can have two types: `direction` or `lookat`.
-
-The data field for `direction` is:
-
-```json
-{
-    type: "direction",
-    direction: "left"
-}
-```
-
-The data field for `lookat` is:
-
-``` json
-{
-    type: "lookat",
-    target: "target",
-    id: 0 [optional]
-}
-```
-
-### Try the playground
+## Try the playground
 
 In order to try the playground, you should:
+1. open sarlide (sarl's ide) and import everything from this repo;
+2. open Godot and import the playground (in case of a different playground do change the agents' map);
+3. start the main scene in godot with `F5`;
+4. right click on Boot.sarl in in sarl/vesna/agents -> run -> as SARL agent;
 
-1. open Godot and import the playground you want;
-2. start the main scene;
+Sometimes after modifying some code and saving the ide may give false errors that will prevent the agents from running, in the upper toolbar click on project -> clean... -> select the project -> clean.
+If this still doesn't get rid of the errors then they're probably real errors that need to be fixed.
+
+### You can also run SARL agents alongside JaCaMo agents
+
+1. open Godot and import the playground you want (unless already open from sarl running);
+2. start the main scene (unless already running from sarl);
 3. go in the mind folder;
 4. launch the project (with `gradle run`).
+
+Be careful not to start JaCaMo agents with a port already being used by a SARL agent (and viceversa)
