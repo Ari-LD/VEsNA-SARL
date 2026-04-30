@@ -1,0 +1,43 @@
+package vesna.capacities
+
+import env.playgrounds.office.CoffeeMachine
+
+capacity OfficeNavigation {
+	def getMyName : String
+	
+	def getCurrentLoc : String
+	def setCurrentLoc(loc : String)
+	
+	def getPendingLoc : String
+	def setPendingLoc(loc : String)
+	
+	def getTargetLoc : String
+	def setTargetLoc(loc : String)
+
+    def goTo(target : String)
+}
+
+capacity OfficeWork {
+	def getAssignedDesk : String
+	
+	def work
+
+	def printStuff(content : String)
+
+	def isAtDesk : boolean
+}
+
+capacity OfficeCoffee {
+	def getCup : String
+	
+	def getMachine : CoffeeMachine
+	
+	def getIsHoldingCup : boolean
+	def setIsHoldingCup(holding : boolean)
+	
+	def makeCoffee()
+	
+	def takeCup()
+	
+	def isAtCoffeeMachine : boolean
+}

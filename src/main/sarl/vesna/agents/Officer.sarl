@@ -1,0 +1,112 @@
+package vesna.agents
+
+import io.sarl.api.core.Initialize
+import io.sarl.api.core.Logging
+import io.sarl.api.core.DefaultContextInteractions
+import io.sarl.api.core.Schedules
+import io.sarl.api.core.Behaviors
+
+import vesna.capacities.OfficeNavigation
+import vesna.capacities.OfficeWork
+import vesna.capacities.OfficeCoffee
+
+import vesna.skills.AgentNavigation
+import vesna.skills.AgentWork
+import vesna.skills.AgentCoffee
+
+import vesna.events.GodotPerception
+import vesna.events.RegisterAgent
+import vesna.events.CupValidation
+import vesna.events.RequestTask
+import vesna.events.TaskCompleted
+import vesna.events.CupRemoval
+
+abstract agent Officer {
+	uses Behaviors, Logging, OfficeNavigation, OfficeWork, OfficeCoffee, DefaultContextInteractions, Schedules
+
+	protected var myName : String
+	protected var myOffice : String
+	protected var myDesk : String
+	protected var myPort : String
+	protected var myCup : String = null
+	
+	protected var currentTask : String = "NONE"
+
+	on Initialize {
+		this.myName = occurrence.parameters.get(0).toString
+		this.myOffice = occurrence.parameters.get(1).toString
+		this.myDesk = occurrence.parameters.get(2).toString
+		this.myPort = occurrence.parameters.get(3).toString
+		
+		if (occurrence.parameters.length > 4 && occurrence.parameters.get(4) !== null) {
+			this.myCup = occurrence.parameters.get(4).toString
+		}
+
+		loggingName = this.myName
+		
+		info("my name: " + this.myName)
+
+		setSkill(new AgentNavigation(this.myName))
+		setSkill(new AgentWork(this.myDesk, this.myCup))
+
+		info("I am: " + myName + ". Office: " + myOffice + ", Desk: " + myDesk)
+		
+		emit(new RegisterAgent(this.myName, this.myPort, this.myCup))
+	}
+	
+	//if cup exists then sets the skill and the coffee machine instance
+	on CupValidation [this.myCup !== null && occurrence.cup == this.myCup && occurrence.isAvailable == true] {
+		setSkill(new AgentCoffee(this.myCup, occurrence.cupObject, occurrence.machine))
+	}
+
+	//this second event is only if I want the agent to write this message if the cup doesn't exist
+	//otherwise we could remove this one and also remove the boolean from the event
+	on CupValidation [this.myCup !== null && occurrence.cup == this.myCup && occurrence.isAvailable == false] {
+		info("my cup doesn't exist")
+		
+		wake(new CupRemoval())
+	}
+
+	//this event relies on godot sending back the agent's name/id to work correctly
+	//checking with an if instead of a guard because mvn doesn't like optString in a guard
+	on GodotPerception {
+		if (occurrence.jsonData.optString("sender") == this.myName) {
+			info(occurrence.msg)
+			val data = occurrence.jsonData.optJSONObject("data")
+			if (data !== null && data.optString("status") == "completed") {
+				setCurrentLoc(getPendingLoc())
+	
+				if (getCurrentLoc() == getTargetLoc()) {
+					info("Arrived at: " + getCurrentLoc())
+					wake(new TaskCompleted(this.currentTask))
+				} else {
+					goTo(getTargetLoc())
+				}
+			}
+		}
+	}
+	
+	on RequestTask {
+		this.currentTask = occurrence.taskName
+		if (currentTask == "COFFEE" && !hasSkill(OfficeCoffee)) {
+			wake(new TaskCompleted("WORK"))
+		} else {
+			val location = occurrence.location
+			info("Requesting task: " + this.currentTask + " at " + location)
+			goTo(location)
+		}
+	}
+	
+	
+	on TaskCompleted {
+		val currentTask = occurrence.taskName
+		
+		if (currentTask == "WORK") {
+			info("Arrived at my desk, working.")
+			work()
+		} else if (currentTask == "COFFEE") {
+			info("Finished working. Time for coffee.")
+			makeCoffee()
+		}
+	}
+}

@@ -1,0 +1,233 @@
+package vesna.skills
+
+import vesna.capacities.OfficeNavigation
+import vesna.capacities.OfficeWork
+import vesna.capacities.OfficeCoffee
+import vesna.events.ActionRequest
+import vesna.events.RequestGrab
+import vesna.office.OfficeMap
+import vesna.events.RequestTask
+import vesna.events.TaskCompleted
+import vesna.events.CupRemoval
+
+import io.sarl.api.core.DefaultContextInteractions
+import io.sarl.api.core.Logging
+import io.sarl.api.core.Schedules
+import io.sarl.api.core.Behaviors
+
+import env.playgrounds.office.CoffeeMachine
+import env.playgrounds.office.Cup
+
+import org.json.JSONObject
+
+skill AgentNavigation implements OfficeNavigation {
+    uses DefaultContextInteractions, Logging
+    
+    val myName : String
+	new (myName : String) { this.myName = myName }
+	
+	def getMyName : String {
+		this.myName
+	}
+    
+    var currentLoc : String = "unknown"
+	var pendingLoc : String = "unknown"
+	var targetLoc : String = "unknown"
+
+	def getCurrentLoc : String {
+		this.currentLoc
+	}
+	
+	def setCurrentLoc(loc : String) {
+		this.currentLoc = loc
+	}
+
+	def getPendingLoc : String {
+		this.pendingLoc
+	}
+
+	def setPendingLoc(loc : String) {
+		this.pendingLoc = loc
+	}
+
+	def getTargetLoc : String {
+		this.targetLoc
+	}
+
+	def setTargetLoc(loc : String) {
+		this.targetLoc = loc
+	}
+
+    def goTo(target : String) {
+    	setTargetLoc(target)
+		if (getCurrentLoc() == "unknown") {
+			info("Location unknown. Attempting to move to " + target + " to sync.")
+            sendWalkCommand(target)
+			return
+		}
+		
+		if (getCurrentLoc() == target) {
+			info("Arrived at destination")
+			return
+		}
+
+		var myRoom = OfficeMap.getParentRegion(getCurrentLoc()) ?: getCurrentLoc()
+		var targetRoom = OfficeMap.getParentRegion(target) ?: target
+    	
+		val nextStep = OfficeMap.getNextStep(myRoom, targetRoom)
+		
+		if (nextStep !== null) {
+			info("Taking next step: " + nextStep)
+			sendWalkCommand(nextStep)
+		} else {
+			sendWalkCommand(target)
+		}
+    }
+    
+    private def sendWalkCommand(destination : String) {
+		var walkMsg = new JSONObject
+		info(getCurrentLoc() + " --- " + getMyName())
+		walkMsg.put("sender", getMyName())
+		walkMsg.put("receiver", "body")
+		walkMsg.put("type", "walk")
+
+		val data = new JSONObject
+		data.put("type", "goto")
+    	data.put("target", destination)
+    	data.put("id", -1)
+    	walkMsg.put("data", data)
+    	
+    	setPendingLoc(destination) 
+    	
+    	emit(new ActionRequest("walk", walkMsg))
+    }
+}
+
+skill AgentWork implements OfficeWork {
+	uses Logging, OfficeNavigation, Schedules, DefaultContextInteractions, Behaviors
+
+	val assignedDesk : String
+	var cup : String
+	new (desk : String, cup : String) {
+		this.assignedDesk = desk
+		this.cup = cup
+	}
+	
+	def getAssignedDesk : String {
+		this.assignedDesk
+	}
+	
+	on CupRemoval {
+		this.cup = null
+	}
+	
+	/**
+	 * makes the agent print that it's working
+	 * else calls for the agent to move to its desk
+	 */
+	def work {
+		if (isAtDesk) {
+			info("I am working...")
+			in(2000) [
+				printStuff("Stuff")
+			]
+		}
+	}
+
+	def printStuff(Stuff : String) {
+		if (isAtDesk) {
+			info("I am printing " + Stuff + "...")
+			in(4000) [
+				info("Printed!")
+
+				if (this.cup !== null) {
+					wake(new RequestTask("COFFEE", "coffee_machine"))
+				} else {
+					wake(new TaskCompleted("WORK"))
+				}
+			]
+		}
+	}
+
+	/**
+	 * returns true if the agent is at its desk, otherwise false
+	 */
+	def isAtDesk : boolean {
+		val currentPosition : String = getCurrentLoc()
+		
+		//if same then currentPos == desk -> true, else false
+		val result = OfficeMap.isSameLoc(currentPosition, getAssignedDesk)
+		info("current position: " + getCurrentLoc() + " --- my desk: " + getAssignedDesk)
+		
+		return result
+	}
+}
+
+skill AgentCoffee implements OfficeCoffee {
+	uses Logging, OfficeNavigation, DefaultContextInteractions, Behaviors, OfficeWork, Schedules
+	
+	val cup : String
+	val cupObject : Cup
+	val machine : CoffeeMachine
+	
+	new (cup : String, cupObject : Cup, machine : CoffeeMachine) {
+		this.cup = cup
+		this.cupObject = cupObject
+		this.machine = machine
+	}
+	
+	def getCup : String {
+		this.cup
+	}
+	
+	def getCupObject : Cup {
+		this.cupObject
+	}
+	
+	def getMachine : CoffeeMachine {
+		this.machine
+	}
+	
+	var isHoldingCup : boolean = false
+	
+	def getIsHoldingCup : boolean {
+		this.isHoldingCup
+	}
+	
+	def setIsHoldingCup(holding : boolean) {
+		this.isHoldingCup = holding
+	}
+	
+	def makeCoffee() {
+		if (!getIsHoldingCup) {
+			takeCup
+		} else {
+			info("refilling cup")
+		}
+		
+		if (getCurrentLoc() == "coffee_machine") {
+			getMachine.make_coffee(getCup)
+			//not sure if there's a way to check for the end of the artifact's animation
+			in(5000) [
+				wake(new RequestTask("WORK", getAssignedDesk))
+			]
+		}
+	}
+	
+	def takeCup() {
+		info("taking cup: " + getCup)
+		getCupObject.grab(getMyName)
+		setIsHoldingCup(true)
+		emit(new RequestGrab(getMyName, getCup))
+	}
+	
+	/** 
+	 * returns true if the agent is at the coffee machine, otherwise false
+	 */
+	def isAtCoffeeMachine : boolean {
+		val currentPosition : String = getCurrentLoc()
+		val result = OfficeMap.isSameLoc(currentPosition, "coffee_machine")
+		
+		return result
+	}
+}

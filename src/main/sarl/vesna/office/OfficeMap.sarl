@@ -1,0 +1,158 @@
+package vesna.office
+
+import java.util.Map
+import java.util.List
+
+class OfficeMap {
+	static val NTPPI : Map<String, String> = #{
+		"reception" -> "office",
+		"corridor" -> "office",
+		"open_office" -> "office",
+		"outside" -> "office",
+		"common" -> "office",
+		"meeting_room" -> "office",
+		"senior_office_1" -> "office",
+		"senior_office_2" -> "office",
+		"senior_office_3" -> "office",
+		"boss_office_1" -> "office",
+		"boss_office_2" -> "office",
+		
+		"boss_1_desk" -> "boss_office_1",
+		"boss_2_desk" -> "boss_office_2",
+		"boss_3_desk" -> "boss_office_2",
+		
+		"senior_1_desk" -> "senior_office_1",
+		"senior_2_desk" -> "senior_office_1",
+		"senior_3_desk" -> "senior_office_2",
+		"senior_4_desk" -> "senior_office_2",
+		"senior_5_desk" -> "senior_office_3",
+		"senior_6_desk" -> "senior_office_3",
+		
+		"junior_1_desk" -> "open_office",
+		"junior_2_desk" -> "open_office",
+		"junior_3_desk" -> "open_office",
+		"junior_4_desk" -> "open_office",
+		"junior_5_desk" -> "open_office",
+		"junior_6_desk" -> "open_office",
+		"junior_7_desk" -> "open_office",
+		"junior_8_desk" -> "open_office",
+		"junior_9_desk" -> "open_office",
+		"junior_10_desk" -> "open_office",
+		"junior_11_desk" -> "open_office",
+		"junior_12_desk" -> "open_office",
+		
+		"coffee_machine" -> "common",
+		"receptionist_desk" -> "reception",
+		"bench" -> "outside"
+	}
+
+	static val EC : Map<String, List<String>> = #{
+		"corridor" -> #["reception", "open_office"]
+	}
+
+	static val PO : Map<String, List<String>> = #{
+		"door_common" -> #["corridor", "common"],
+		"door_boss_office_1" -> #["open_office", "boss_office_1"],
+		"door_boss_office_2" -> #["open_office", "boss_office_2"],
+		"door_senior_office_1" -> #["corridor", "senior_office_1"],
+		"door_senior_office_2" -> #["corridor", "senior_office_2"],
+		"door_senior_office_3" -> #["corridor", "senior_office_3"],
+		"door_meeting_room" -> #["corridor", "meeting_room"],
+		"door_outside_1" -> #["open_office", "outside"],
+		"door_outside_2" -> #["open_office", "outside"]
+	}
+
+	static def findDoorBetween(room1 : String, room2 : String) : String {
+		for (entry : PO.entrySet) {
+			val connections = entry.value
+			if(connections.contains(room1) && connections.contains(room2)) return entry.key
+		}
+		return null
+	}
+	
+	static def findExitDoor(room : String) : String {
+		for (entry : PO.entrySet) {
+			if (entry.value.contains(room)) return entry.key
+		}
+		return null
+	}
+
+	@SuppressWarnings("null_safe_feature_call_on_primitive_valued_feature")
+	static def getNextStep(currentRoom : String, targetRoom : String) : String {
+		if(currentRoom == targetRoom) return null
+
+		// are we currently AT a door? if so, move to the room we aren't in yet
+		if (PO.containsKey(currentRoom)) {
+			val rooms = PO.get(currentRoom)
+			// every door connects 2 places to each other so we just need the one of the two we're not in, no need to do extra checks for parent regions up to the target room
+			for (room : rooms) {
+				if(room != currentRoom) return room
+			}
+		}
+
+		// check for a direct door
+		val door = findDoorBetween(getParentRegion(currentRoom) ?: currentRoom, targetRoom)
+		if(door !== null) return door
+
+		// check for an archway (EC)
+        if (EC.get(currentRoom)?.contains(targetRoom)) return targetRoom
+
+		// if in a private office, go to the nearest connector
+		if (currentRoom != "corridor" && currentRoom != "open_office") {
+			return findExitDoor(currentRoom)
+        }
+        
+        // if in corridor but target is in outside, go to open_office
+		if (currentRoom == "corridor") {
+			val targetSuper = getParentRegion(targetRoom)
+            if (targetSuper == "open_office" || targetRoom == "open_office") {
+				return "open_office"
+            }
+        }
+        
+        // if in open_office but target is in common, go to corridor
+		if (currentRoom == "open_office") {
+			val targetSuper = getParentRegion(targetRoom)
+            if (targetSuper == "corridor" || targetRoom == "corridor") {
+				return "corridor"
+			}
+		}
+
+        return null
+    }
+
+	/** 
+	 * Helper function: Get the room a desk is in
+	*/
+	static def getParentRegion(location : String) : String {
+		return NTPPI.get(location)
+	}
+	
+	/**
+	 * checks if two locations (like two desks) are in the same room
+	 */
+	static def areInSameRoom(loc1 : String, loc2 : String) : boolean {
+		val p1 = getParentRegion(loc1)
+		val p2 = getParentRegion(loc2)
+		return p1 !== null && p1==p2
+	}
+	
+	/**
+	 * checks if one location is physically inside another recursively.
+	 * accounts for nested regions
+	 */
+	static def isContainedIn(sub : String, sup : String) : boolean {
+		if (sub == sup) return true
+		val parent = getParentRegion(sub)
+		if (parent === null) return false
+		if (parent == sup) return true
+		
+		//rec call for nested regions (Desk -> Room -> Office => Desk inside Office)
+		return isContainedIn(parent, sup)
+	}
+	
+	static def isSameLoc(loc1 : String, loc2 : String) : boolean {
+		if (loc1 == loc2) return true
+		return false
+	}
+}

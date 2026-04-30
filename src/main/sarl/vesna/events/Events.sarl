@@ -1,0 +1,101 @@
+package vesna.events
+
+import env.playgrounds.office.CoffeeMachine
+import env.playgrounds.office.Cup
+
+import org.json.JSONObject
+
+event ActionRequest {
+	val type : String
+	val data : JSONObject
+	
+	new(type : String, data : JSONObject) {
+		this.type = type
+		this.data = data
+	}
+}
+
+event GodotPerception {
+	val jsonData : JSONObject
+	val msg : String
+
+	new(data : JSONObject, msg : String) {
+		this.jsonData = data
+		this.msg = msg
+	}
+}
+
+event RegisterAgent {
+	val myName : String
+	val port : String
+	val myCup : String
+	
+	new(myName : String, myPort : String, cup : String) {
+		this.myName = myName
+		this.port = myPort
+		this.myCup = cup
+	}
+}
+
+// needs a better name, to call the methods of the current task
+event TaskCompleted {
+	val taskName : String
+	
+	new(taskName : String) {
+		this.taskName = taskName
+	}
+}
+
+event RequestTask {
+	val taskName : String
+	val location : String
+	
+	new(taskName : String, location : String) {
+		this.taskName = taskName
+		this.location = location
+	}
+}
+
+event RequestGrab {
+	val agentName : String
+	val cupName : String
+	
+	new(requester : String, cupName : String) {
+		this.agentName = requester
+		this.cupName = cupName
+	}
+}
+
+//maybe won't be used
+event GrabGranted {
+	val cupName : String
+
+	new(cupName : String) {
+		this.cupName = cupName
+	}
+}
+
+//useful to implement logic to release a cup
+event RequestRelease {
+	val cupName : String
+	
+	new(cupName : String) {
+		this.cupName = cupName
+	}
+}
+
+event CupValidation {
+	val cup : String
+	val cupObject : Cup
+	val isAvailable : boolean
+	val machine : CoffeeMachine
+		
+	new(cup : String, cupObject : Cup, isAvailable : boolean, machine : CoffeeMachine) {
+		this.cup = cup
+		this.cupObject = cupObject
+		this.isAvailable = isAvailable
+		this.machine = machine
+	}
+}
+
+event CupRemoval {}

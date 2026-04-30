@@ -1,0 +1,142 @@
+package vesna.agents
+
+import vesna.WsClient
+import vesna.WsClientMsgHandler
+import vesna.events.ActionRequest
+import vesna.events.GodotPerception
+import vesna.events.RegisterAgent
+import vesna.events.RequestGrab
+import vesna.events.RequestRelease
+import vesna.events.CupValidation
+
+import io.sarl.api.core.Initialize
+import io.sarl.api.core.Lifecycle
+import io.sarl.api.core.Logging
+import io.sarl.api.core.DefaultContextInteractions
+import io.sarl.api.core.InnerContextAccess
+
+import env.playgrounds.office.CoffeeMachine
+import env.playgrounds.office.Cup
+
+import java.net.URI
+import org.json.JSONObject
+import java.util.Map
+import java.util.HashMap
+
+agent BridgeAgent {
+	uses Logging, DefaultContextInteractions, InnerContextAccess, Lifecycle
+	
+	var connections : Map<String, WsClient> = new HashMap
+	var cups : Map<String, String> = new HashMap
+	
+	val machine : CoffeeMachine = new CoffeeMachine()
+	
+	on Initialize {
+		loggingName = "BridgeAgent"
+        info("trying to connect to Godot...")
+        
+        cups.put("cup1", null)
+		cups.put("cup2", null)
+
+		spawnInContext(Bob, getInnerContext, "Bob", "reception", "junior_10_desk", "9080", "cup2")
+		spawnInContext(Alice, getInnerContext, "Alice", "senior_office_3", "senior_5_desk", "9081", "cup1")
+		spawnInContext(Charlie, getInnerContext, "Charlie", "reception", "junior_11_desk", "9082", "cup3")
+		spawnInContext(David, getInnerContext, "David", "reception", "junior_2_desk", "9083", "test")
+	}
+
+	on RegisterAgent [occurrence.myName !== null] {
+		try{
+			val name = occurrence.myName
+			val uri = new URI("ws://localhost:" + occurrence.port)
+			val client = new WsClient(uri)
+	
+			client.setMsgHandler(new WsClientMsgHandler {
+				override handle_msg(msg : String) {
+					info("Received from godot: " + msg)
+					try {
+						val json = new JSONObject(msg)
+						getInnerContext.getDefaultSpace.emit(getID, new GodotPerception(json, msg))
+					} catch (e : Exception) {
+						error("failed to parse message from godot: " + msg)
+							}
+				}
+	
+				override handle_error(e : Exception) {
+					error("WS ERROR: " + e.message)
+				}
+			})
+			
+			client.connectBlocking()
+	
+			if (client.isOpen) {
+				info("Bridge is open. waiting for agent requests")
+					} else {
+				error("connection failed. is godot running?")
+			}
+			
+			
+			connections.put(name, client)
+			info("Agent " + name + " connected on port " + occurrence.port)
+
+			if (occurrence.myCup !== null) {
+				if (cups.containsKey(occurrence.myCup)) {
+					val cupObject : Cup = new Cup(occurrence.myCup, this.machine.client)
+					getInnerContext.getDefaultSpace.emit(getID, new CupValidation(occurrence.myCup, cupObject, true, machine))
+				} else {
+					getInnerContext.getDefaultSpace.emit(getID, new CupValidation(occurrence.myCup, null, false, null))
+				}
+			}
+		} catch (e : Exception) {
+			error(e.message)
+		}
+	}
+	
+	on ActionRequest [occurrence.type == "walk"] {
+		val name = occurrence.data.optString("sender")
+		val client = connections.get(name)
+		
+		info("Bridge sending JSON: " + occurrence.data.toString())
+		
+		if (client !== null && client.isOpen) {
+			val messageToSend = occurrence.data.toString
+			client.send(messageToSend)
+		} else {
+			error("Cannot send action. Socket is closed")
+			}
+	}
+	
+	
+	//FIXME: find a way to access the cups names from Officer
+	//and uninstall or use it as another check to not install
+	//the coffee skill, here it will always go to the coffee
+	//even without an existing cup
+	
+	//a way would be to create another event and use it to return one of two events?
+	//based on which either do nothing or uninstall the skill (or don't install it at all)
+	
+	//could mabe work for the coffee machine too, but not sure how yet
+	//last resource would be to create a coffee machine for each agent with a valid cup, hopefully I can avoid it
+	on RequestGrab {
+		val requester = occurrence.agentName
+		val cupName = occurrence.cupName
+		
+		val currentOwner = cups.get(cupName)
+		
+		if (currentOwner === null) {
+			if (!cups.containsKey(cupName)) {
+				error("Cup " + cupName + " doesn't exist")
+			} else {
+				cups.put(cupName, requester)
+				//need to add behavior to block rest of coffee logic if cup not available
+				//still working for now though
+			}
+		} else {
+			error("Cup " + cupName + " already held by " + currentOwner)
+		}
+	}
+	
+	on RequestRelease {
+		cups.put(occurrence.cupName, null)
+		info("Cup " + occurrence.cupName + " has been released")
+	}
+}

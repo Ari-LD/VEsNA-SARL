@@ -1,0 +1,20 @@
+package vesna.agents
+
+import io.sarl.api.core.Initialize
+import io.sarl.api.core.Logging
+import io.sarl.api.core.Schedules
+import io.sarl.api.core.DefaultContextInteractions
+import vesna.capacities.OfficeWork
+import vesna.events.RequestTask
+import io.sarl.api.core.Behaviors
+
+agent David extends Officer {
+	uses Behaviors, Logging, Schedules, OfficeWork, DefaultContextInteractions
+
+	on Initialize {
+		in(2000) [
+			info("Shift starting. Going to desk.")
+			wake(new RequestTask("WORK", this.myDesk))
+		]
+	}
+}

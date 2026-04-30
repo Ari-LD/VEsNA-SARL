@@ -29,7 +29,7 @@ func _ready() -> void:
 	#lateral_sight.connect( 'body_entered', _on_area_body_entered )
 
 
-func _physics_process( delta: float ) -> void:
+func _physics_process( delta: float,  ) -> void:
 	while tcp_server.is_connection_available():
 		var conn : StreamPeerTCP = tcp_server.take_connection()
 		assert( conn != null)
@@ -92,7 +92,6 @@ func _on_area_body_entered( body ):
 		ws.send_text( JSON.stringify( sight ) )
 			
 func manage( intention ):
-	var sender : String = intention['sender']
 	var receiver : String = intention['receiver']
 	var type : String = intention['type']
 	var data : Dictionary = intention['data']
@@ -105,7 +104,12 @@ func manage( intention ):
 		update_region( new_region )
 		
 func walk( target, id ):
+	if navigator == null:
+		print("Waiting for navigator to initialize...")
+		return
+		
 	print("I have to move ", target)
+	
 	if target == 'random':
 		# navigator.set_target_position(position + Vector3(0.0, 0.0, 8.0))
 		var tr = get_current_triangle()
@@ -113,14 +117,15 @@ func walk( target, id ):
 		if tr == -1:
 			tr = old_triangle
 		var adjs = get_adj_triangles( tr )
-		navigator.set_target_position( get_triangle_center(adjs[0]) )
+		if adjs.size() > 0:
+			navigator.set_target_position( get_triangle_center(adjs[0]) )
 	if target == 'triangle':
 		navigator.set_target_position( get_triangle_center(id) )
 	if target == 'door':
 		var door_node = instance_from_id(id)
 		var dist = door_node.position - position
-		
-		navigator.set_target_position( door_node.position )
+		if door_node != null:
+			navigator.set_target_position( door_node.position )
 	end_communication = false
 	
 func update_triangle() -> void:

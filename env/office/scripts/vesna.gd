@@ -130,10 +130,13 @@ func walk( target, id ):
 		target_region = get_node_or_null("/root/Root/NavigationRegion3D/Regions/" + target )
 	if target_region == null:
 		target_region = get_node_or_null("/root/Root/NavigationRegion3D/Doors/" + target )
-	navigator.set_target_position( target_region.global_position )
-	target_movement = target
-	play_run()
-	end_communication = false
+	if target_region != null:	
+		navigator.set_target_position( target_region.global_position )
+		target_movement = target
+		play_run()
+		end_communication = false
+	else:
+		print("ERROR: Target node '" + target + "' not found in Scene Tree!")
 
 func get_obj_from_group( art_name : String, group_name : String ):
 	var group_objs = get_tree().get_nodes_in_group( group_name )
@@ -181,7 +184,7 @@ func release( art_name : String ):
 func signal_end_movement( ) -> void:
 	target_movement = "empty"
 	var log : Dictionary = {}
-	log[ 'sender' ] = 'body'
+	log[ 'sender' ] = self.name
 	log[ 'receiver' ] = 'vesna'
 	log[ 'type' ] = 'signal'
 	var msg : Dictionary = {}

@@ -1,0 +1,17 @@
+package vesna.agents
+
+import io.sarl.api.core.Initialize
+import io.sarl.api.core.Lifecycle
+import io.sarl.api.core.Logging
+
+agent Boot {
+	uses Lifecycle, Logging
+
+	on Initialize {
+		loggingName = "Boot Agent"
+		spawn(BridgeAgent)
+
+		info("Program started. Boot agent shutting down.")
+		killMe
+	}
+}
