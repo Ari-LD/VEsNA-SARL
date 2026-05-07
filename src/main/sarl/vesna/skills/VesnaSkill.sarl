@@ -1,0 +1,107 @@
+package vesna.skills
+
+import vesna.capacities.VesnaNavigationCapacity
+
+import vesna.events.SendRequest
+
+import vesna.map.NavigationModel
+
+import io.sarl.api.core.DefaultContextInteractions
+import io.sarl.api.core.Logging
+
+import org.json.JSONObject
+
+skill VesnaNavigationSkill implements VesnaNavigationCapacity {
+	uses DefaultContextInteractions, Logging
+
+	protected val myName : String
+
+	protected val navModel : NavigationModel
+
+	new (myName : String, navModel : NavigationModel) {
+		this.myName = myName
+		this.navModel = navModel
+	}
+
+	def getMyName : String {
+		this.myName
+	}
+
+	def getNavModel : NavigationModel {
+		this.navModel
+	}
+
+	protected var currentLoc : String = "unknown"
+	protected var pendingLoc : String = "unknown"
+	protected var targetLoc : String = "unknown"
+
+	def getCurrentLoc : String {
+		this.currentLoc
+	}
+
+	def setCurrentLoc(loc : String) {
+		this.currentLoc = loc
+	}
+
+	def getPendingLoc : String {
+		this.pendingLoc
+	}
+
+	def setPendingLoc(loc : String) {
+		this.pendingLoc = loc
+	}
+
+	def getTargetLoc : String {
+		this.targetLoc
+	}
+
+	def setTargetLoc(loc : String) {
+		this.targetLoc = loc
+	}
+
+	def goTo(target : String) {
+		setTargetLoc(target)
+		if (getCurrentLoc() == "unknown") {
+			info("Location unknown. Attempting to move to " + target + " to sync.")
+            sendWalkCommand(target)
+			return
+		}
+
+		if (getNavModel.isSameLocation(getCurrentLoc, target)) {
+			info("Arrived at destination")
+			return
+		}
+
+		val nextStep = computeNextStep()
+
+		if (nextStep !== null) {
+			info("Taking next step: " + nextStep)
+			sendWalkCommand(nextStep)
+		} else {
+			sendWalkCommand(getTargetLoc)
+		}
+	}
+	
+	// override this method to add your own logic to get the correct next step the agent needs to do
+	protected def computeNextStep() : String {
+		return getTargetLoc
+	}
+
+	def sendWalkCommand(destination : String) {
+		var walkMsg = new JSONObject
+		info(getCurrentLoc() + " --- " + getMyName())
+		walkMsg.put("sender", getMyName())
+		walkMsg.put("receiver", "body")
+		walkMsg.put("type", "walk")
+
+		val data = new JSONObject
+		data.put("type", "goto")
+		data.put("target", destination)
+		data.put("id", -1)
+		walkMsg.put("data", data)
+
+		setPendingLoc(destination)
+
+		emit(new SendRequest("walk", walkMsg))
+	}
+}

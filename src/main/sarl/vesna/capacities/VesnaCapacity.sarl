@@ -1,0 +1,21 @@
+package vesna.capacities
+
+capacity VesnaNavigationCapacity {
+
+	def getMyName : String
+
+	def getCurrentLoc : String
+
+	def setCurrentLoc(loc : String)
+
+	def getPendingLoc : String
+
+	def setPendingLoc(loc : String)
+
+	def getTargetLoc : String
+
+	def setTargetLoc(loc : String)
+
+	def goTo(target : String)
+
+}

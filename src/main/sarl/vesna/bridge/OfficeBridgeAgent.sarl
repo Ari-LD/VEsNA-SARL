@@ -1,0 +1,83 @@
+package vesna.bridge
+
+import vesna.events.RegisterAgent
+import vesna.events.RequestGrab
+import vesna.events.RequestRelease
+import vesna.events.CupValidation
+
+//replace these with the name(s) of your agent(s) in vesna.agents
+import vesna.agents.Alice
+import vesna.agents.Bob
+// import vesna.agents.Charlie
+// import vesna.agents.David
+
+import io.sarl.api.core.Lifecycle
+import io.sarl.api.core.Logging
+import io.sarl.api.core.InnerContextAccess
+
+import env.playgrounds.office.CoffeeMachine
+import env.playgrounds.office.Cup
+
+import java.util.Map
+import java.util.HashMap
+
+import org.json.JSONObject
+
+agent OfficeBridgeAgent extends VesnaAgent {
+	uses Logging, InnerContextAccess, Lifecycle
+
+	var machine : CoffeeMachine
+	var cups : Map<String, String>
+	
+	on RequestGrab {
+		val requester = occurrence.agentName
+		val cupName = occurrence.cupName
+		
+		val currentOwner = this.cups.get(cupName)
+		
+		if (currentOwner === null) {
+			if (!this.cups.containsKey(cupName)) {
+				error("Cup " + cupName + " doesn't exist")
+			} else {
+				this.cups.put(cupName, requester)
+			}
+		} else {
+			error("Cup " + cupName + " already held by " + currentOwner)
+		}
+	}
+	
+	on RequestRelease {
+		this.cups.put(occurrence.cupName, null)
+		info("Cup " + occurrence.cupName + " has been released")
+	}
+	
+	override spawnAgents {
+		spawnInContext(Bob, getInnerContext, "9080", "Bob", "reception", "junior_10_desk", "cup2")
+		spawnInContext(Alice, getInnerContext, "9081", "Alice", "senior_office_3", "senior_5_desk", "cup1")
+		// spawnInContext(Charlie, getInnerContext, "9082", "Charlie", "reception", "junior_11_desk", "cup3")
+		// spawnInContext(David, getInnerContext, "9083", "David", "reception", "junior_2_desk", "test")
+	}
+	
+	override setupEnvironment {
+		this.machine = new CoffeeMachine()
+		
+		this.cups = new HashMap
+		this.cups.put("cup1", null)
+		this.cups.put("cup2", null)
+	}
+	
+	override onAgentConnected(occ : RegisterAgent) {
+		val data = new JSONObject(occ.data)
+		val cup = data.optString("cup")
+		
+		if (cup !== null) {
+			if (this.cups.containsKey(cup)) {
+				val cupObject : Cup = new Cup(cup, this.machine.client)
+				getInnerContext.getDefaultSpace.emit(getID,
+					new CupValidation(cup, cupObject, true, machine))
+			} else {
+				getInnerContext.getDefaultSpace.emit(getID, new CupValidation(cup, null, false, null))
+			}
+		}
+	}
+}

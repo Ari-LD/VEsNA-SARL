@@ -1,11 +1,13 @@
 package vesna.skills
 
-import vesna.capacities.OfficeNavigation
+import vesna.capacities.VesnaNavigationCapacity
 import vesna.capacities.OfficeWork
 import vesna.capacities.OfficeCoffee
-import vesna.events.ActionRequest
+
 import vesna.events.RequestGrab
-import vesna.office.OfficeMap
+
+import vesna.map.OfficeMap
+
 import vesna.events.RequestTask
 import vesna.events.TaskCompleted
 
@@ -17,102 +19,44 @@ import io.sarl.api.core.Behaviors
 import env.playgrounds.office.CoffeeMachine
 import env.playgrounds.office.Cup
 
-import org.json.JSONObject
-
-skill AgentNavigation implements OfficeNavigation {
+skill AgentNavigation extends VesnaNavigationSkill {
     uses DefaultContextInteractions, Logging
-    
-    val myName : String
-	new (myName : String) { this.myName = myName }
-	
-	def getMyName : String {
-		this.myName
-	}
-    
-    var currentLoc : String = "unknown"
-	var pendingLoc : String = "unknown"
-	var targetLoc : String = "unknown"
 
-	def getCurrentLoc : String {
-		this.currentLoc
+    var officeMap : OfficeMap
+    
+	new (myName : String, officeMap : OfficeMap) {
+		super(myName, officeMap)
 	}
 	
-	def setCurrentLoc(loc : String) {
-		this.currentLoc = loc
+	def getOfficeMap : OfficeMap {
+		this.officeMap
 	}
-
-	def getPendingLoc : String {
-		this.pendingLoc
-	}
-
-	def setPendingLoc(loc : String) {
-		this.pendingLoc = loc
-	}
-
-	def getTargetLoc : String {
-		this.targetLoc
-	}
-
-	def setTargetLoc(loc : String) {
-		this.targetLoc = loc
-	}
-
-    def goTo(target : String) {
-    	setTargetLoc(target)
-		if (getCurrentLoc() == "unknown") {
-			info("Location unknown. Attempting to move to " + target + " to sync.")
-            sendWalkCommand(target)
-			return
-		}
-		
-		if (getCurrentLoc() == target) {
-			info("Arrived at destination")
-			return
-		}
-
-		var myRoom = OfficeMap.getParentRegion(getCurrentLoc()) ?: getCurrentLoc()
-		var targetRoom = OfficeMap.getParentRegion(target) ?: target
-    	
-		val nextStep = OfficeMap.getNextStep(myRoom, targetRoom)
-		
-		if (nextStep !== null) {
-			info("Taking next step: " + nextStep)
-			sendWalkCommand(nextStep)
-		} else {
-			sendWalkCommand(target)
-		}
-    }
-    
-    private def sendWalkCommand(destination : String) {
-		var walkMsg = new JSONObject
-		info(getCurrentLoc() + " --- " + getMyName())
-		walkMsg.put("sender", getMyName())
-		walkMsg.put("receiver", "body")
-		walkMsg.put("type", "walk")
-
-		val data = new JSONObject
-		data.put("type", "goto")
-    	data.put("target", destination)
-    	data.put("id", -1)
-    	walkMsg.put("data", data)
-    	
-    	setPendingLoc(destination) 
-    	
-    	emit(new ActionRequest("walk", walkMsg))
+	
+    override computeNextStep : String {
+		var myRoom = getOfficeMap.getParentRegion(getCurrentLoc()) ?: getCurrentLoc()
+		var targetRoom = getOfficeMap.getParentRegion(getTargetLoc) ?: getTargetLoc
+		return getOfficeMap.getNextStep(myRoom, targetRoom)
     }
 }
 
 skill AgentWork implements OfficeWork {
-	uses Logging, OfficeNavigation, Schedules, DefaultContextInteractions, Behaviors
+	uses Logging, VesnaNavigationCapacity, Schedules, DefaultContextInteractions, Behaviors
 
 	var coffeeAmount : int = 0
 	
 	val assignedDesk : String
 	var cup : String
+
+	val officeMap : OfficeMap
 	
-	new (desk : String, cup : String) {
+	new (desk : String, cup : String, officeMap : OfficeMap) {
 		this.assignedDesk = desk
 		this.cup = cup
+		this.officeMap = officeMap
+	}
+
+	def getOfficeMap : OfficeMap {
+		this.officeMap
 	}
 	
 	def getAssignedDesk : String {
@@ -172,7 +116,7 @@ skill AgentWork implements OfficeWork {
 		val currentPosition : String = getCurrentLoc()
 		
 		//if same then currentPos == desk -> true, else false
-		val result = OfficeMap.isSameLoc(currentPosition, getAssignedDesk)
+		val result = getOfficeMap.isSameLocation(currentPosition, getAssignedDesk)
 		info("current position: " + getCurrentLoc() + " --- my desk: " + getAssignedDesk)
 		
 		return result
@@ -180,16 +124,22 @@ skill AgentWork implements OfficeWork {
 }
 
 skill AgentCoffee implements OfficeCoffee {
-	uses Logging, OfficeNavigation, DefaultContextInteractions, Behaviors, OfficeWork, Schedules
+	uses Logging, VesnaNavigationCapacity, DefaultContextInteractions, Behaviors, OfficeWork, Schedules
 	
 	val cup : String
 	val cupObject : Cup
 	val machine : CoffeeMachine
+	val officeMap : OfficeMap
 	
-	new (cup : String, cupObject : Cup, machine : CoffeeMachine) {
+	new (cup : String, cupObject : Cup, machine : CoffeeMachine, officeMap : OfficeMap) {
 		this.cup = cup
 		this.cupObject = cupObject
 		this.machine = machine
+		this.officeMap = officeMap
+	}
+
+	def getOfficeMap : OfficeMap {
+		this.officeMap
 	}
 	
 	def getCup : String {
@@ -243,7 +193,7 @@ skill AgentCoffee implements OfficeCoffee {
 	 */
 	def isAtCoffeeMachine : boolean {
 		val currentPosition : String = getCurrentLoc()
-		val result = OfficeMap.isSameLoc(currentPosition, "coffee_machine")
+		val result = getOfficeMap.isSameLocation(currentPosition, "coffee_machine")
 		
 		return result
 	}
