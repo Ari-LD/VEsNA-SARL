@@ -4,6 +4,7 @@ import io.sarl.api.core.Initialize
 import io.sarl.api.core.Lifecycle
 import io.sarl.api.core.Logging
 
+//starting point of the program, right click the file and start as 'sarl agent'
 agent Boot {
 	uses Lifecycle, Logging
 
@@ -11,7 +12,7 @@ agent Boot {
 		loggingName = "Boot Agent"
 		
 		// replace with the name of your bridge agent in vesna.bridge
-		spawn(OfficeBridgeAgent)
+		spawn(VesnaAgent)
 
 		info("Program started. Boot agent shutting down.")
 		killMe

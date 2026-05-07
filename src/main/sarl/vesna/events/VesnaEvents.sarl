@@ -2,6 +2,7 @@ package vesna.events
 
 import org.json.JSONObject
 
+// event to send json packages to the virtual environment
 event SendRequest {
 	val type : String
 	val data : JSONObject
@@ -12,6 +13,7 @@ event SendRequest {
 	}
 }
 
+// event to receive json packages from the virtual environment
 event AnswerReceived {
 	val jsonData : JSONObject
 	val msg : String
@@ -22,6 +24,7 @@ event AnswerReceived {
 	}
 }
 
+// event to register the agent on a port in the bridge
 event RegisterAgent {
 	val myName : String
 	val port : String

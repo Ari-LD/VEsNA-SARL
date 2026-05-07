@@ -31,11 +31,16 @@ abstract agent VesnaAgent {
         setupEnvironment
 	}
 
+	// will be used to spawn agents
+	// note that this (bridge) agent expects the agents to be spawned in its inner context
+	// if you want to have the agents in the same space just spawn them without any extra innerContext stuff and
+	// edit the emit in RegisterAgent to only emit the event without the extra stuff ( 'emit(new AnswerReceived(json, msg))' )
 	def spawnAgents() {}
 	
+	// for extra stuff you may need for your environment and agents
 	def setupEnvironment() {}
 
-
+	// creates a connection between the agent on the specific port and the environment
 	on RegisterAgent [occurrence.myName !== null] {
 		try{
 			val name = occurrence.myName
@@ -75,9 +80,10 @@ abstract agent VesnaAgent {
 		}
 	}
 
+	// extra stuff for when the agent connects
 	def onAgentConnected(occ : RegisterAgent) {}
 	
-	
+	// sends a json package to the virtual environment
 	on SendRequest [occurrence.type == "walk"] {
 		val name = occurrence.data.optString("sender")
 		val client = connections.get(name)
@@ -89,6 +95,6 @@ abstract agent VesnaAgent {
 			client.send(messageToSend)
 		} else {
 			error("Cannot send action. Socket is closed")
-			}
+		}
 	}
 }

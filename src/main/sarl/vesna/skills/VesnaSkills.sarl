@@ -59,6 +59,7 @@ skill VesnaNavigationSkill implements VesnaNavigationCapacity {
 		this.targetLoc = loc
 	}
 
+	// common checks for an empty location, arrived at destination and to send a json package if we arrived
 	def goTo(target : String) {
 		setTargetLoc(target)
 		if (getCurrentLoc() == "unknown") {
@@ -87,6 +88,7 @@ skill VesnaNavigationSkill implements VesnaNavigationCapacity {
 		return getTargetLoc
 	}
 
+	// creates a json package to tell the virtual environment where to move to
 	def sendWalkCommand(destination : String) {
 		var walkMsg = new JSONObject
 		info(getCurrentLoc() + " --- " + getMyName())
