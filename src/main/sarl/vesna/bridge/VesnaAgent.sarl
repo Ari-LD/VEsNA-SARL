@@ -1,0 +1,94 @@
+package vesna.bridge
+
+import vesna.WsClient
+import vesna.WsClientMsgHandler
+
+import vesna.events.SendRequest
+import vesna.events.AnswerReceived
+import vesna.events.RegisterAgent
+
+import io.sarl.api.core.Initialize
+import io.sarl.api.core.Lifecycle
+import io.sarl.api.core.Logging
+import io.sarl.api.core.InnerContextAccess
+
+import java.net.URI
+import java.util.Map
+import java.util.HashMap
+
+import org.json.JSONObject
+
+abstract agent VesnaAgent {
+	uses Logging, InnerContextAccess, Lifecycle
+	
+	var connections : Map<String, WsClient> = new HashMap
+	
+	on Initialize {
+		loggingName = "BridgeAgent"
+        info("trying to connect to Godot...")
+        
+        spawnAgents
+        setupEnvironment
+	}
+
+	def spawnAgents() {}
+	
+	def setupEnvironment() {}
+
+
+	on RegisterAgent [occurrence.myName !== null] {
+		try{
+			val name = occurrence.myName
+			val uri = new URI("ws://localhost:" + occurrence.port)
+			val client = new WsClient(uri)
+	
+			client.setMsgHandler(new WsClientMsgHandler {
+				override handle_msg(msg : String) {
+					info("Received from godot: " + msg)
+					try {
+						val json = new JSONObject(msg)
+						getInnerContext.getDefaultSpace.emit(getID, new AnswerReceived(json, msg))
+					} catch (e : Exception) {
+						error("failed to parse message from godot: " + msg)
+							}
+				}
+	
+				override handle_error(e : Exception) {
+					error("WS ERROR: " + e.message)
+				}
+			})
+			
+			client.connectBlocking()
+	
+			if (client.isOpen) {
+				info("Bridge is open. waiting for agent requests")
+					} else {
+				error("connection failed. is godot running?")
+			}
+			
+			
+			connections.put(name, client)
+			info("Agent " + name + " connected on port " + occurrence.port)
+			onAgentConnected(occurrence)
+		} catch (e : Exception) {
+			error(e.message)
+		}
+	}
+
+	def onAgentConnected(occ : RegisterAgent) {}
+	
+	
+	on SendRequest [occurrence.type == "walk"] {
+		val name = occurrence.data.optString("sender")
+		val client = connections.get(name)
+		
+		info("Bridge sending JSON: " + occurrence.data.toString())
+		
+		if (client !== null && client.isOpen) {
+			val messageToSend = occurrence.data.toString
+			client.send(messageToSend)
+		} else {
+			error("Cannot send action. Socket is closed")
+			}
+	}
+}

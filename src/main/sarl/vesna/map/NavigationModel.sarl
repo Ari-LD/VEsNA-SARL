@@ -1,0 +1,10 @@
+package vesna.map
+
+abstract class NavigationModel {
+	abstract def getNextStep(currentLocation : String, targetLocation : String) : String
+    
+	def isSameLocation(loc1 : String, loc2 : String) : boolean {
+		if(loc1 == loc2) return true
+		return false
+	}
+}

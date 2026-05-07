@@ -1,0 +1,82 @@
+package vesna.agents
+
+import io.sarl.api.core.Initialize
+import io.sarl.api.core.Logging
+import io.sarl.api.core.DefaultContextInteractions
+
+import vesna.capacities.VesnaNavigationCapacity
+
+import vesna.skills.VesnaNavigationSkill
+
+import vesna.map.NavigationModel
+
+import vesna.events.AnswerReceived
+import vesna.events.RegisterAgent
+
+import org.json.JSONObject
+
+abstract agent TemplateAgent {
+	uses Logging, VesnaNavigationCapacity, DefaultContextInteractions
+
+	protected var myName : String
+	protected var myPort : String
+
+	on Initialize {
+		this.myPort = occurrence.parameters.get(0).toString
+		this.myName = occurrence.parameters.get(1).toString
+
+		loggingName = this.myName
+		
+		try {
+			emit(new RegisterAgent(this.myName, this.myPort, getAdditionalData(occurrence)))
+		} catch (e : Exception) {
+			error(e.message)
+		}
+		
+		info("I am: " + myName)
+		
+		setupSkills
+	}
+	
+	def getNavigationModel : NavigationModel {
+		return null
+	}
+
+	def getAdditionalData(occ : Initialize) : String {
+		return null
+	}
+	
+	def setupSkills : void {
+		val navModel = getNavigationModel
+		
+		if (navModel !== null) {
+			setSkill(new VesnaNavigationSkill(this.myName, navModel))
+		} else {
+			error("No navigation model provided")
+		}
+	}
+	
+	//this event relies on godot sending back the agent's name/id to work correctly
+	//checking with an if instead of a guard because mvn doesn't like optString in a guard
+	on AnswerReceived {
+		if (occurrence.jsonData.optString("sender") == this.myName) {
+			info(occurrence.msg)
+			val data = occurrence.jsonData.optJSONObject("data")
+			if (data !== null && data.optString("status") == "completed") {
+				onActionCompleted(data)
+			}
+		}
+	}
+
+	def onActionCompleted(data : JSONObject) {
+		setCurrentLoc(getPendingLoc())
+		if (getCurrentLoc() == getTargetLoc()) {
+			info("Arrived at: " + getCurrentLoc())
+			onArrivalAtTarget
+		} else {
+			goTo(getTargetLoc())
+		}
+	}
+
+	def onArrivalAtTarget {}
+}
