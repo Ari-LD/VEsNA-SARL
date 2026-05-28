@@ -130,7 +130,7 @@
 			    <configuration>
 			        <mainClass>io.sarl.sre.janus.Boot</mainClass>
 			        <arguments>
-			            <argument>vesna.agents.Boot</argument>
+			            <argument>vesna.bridge.Boot</argument>
 			        </arguments>
 			    </configuration>
 			</plugin>
