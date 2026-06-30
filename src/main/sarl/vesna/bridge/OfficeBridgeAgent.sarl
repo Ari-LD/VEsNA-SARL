@@ -59,7 +59,7 @@ agent OfficeBridgeAgent extends VesnaAgent {
 	}
 	
 	override setupEnvironment {
-		this.machine = new CoffeeMachine()
+		this.machine = new CoffeeMachine(8095)
 		
 		this.cups = new HashMap
 		this.cups.put("cup1", null)

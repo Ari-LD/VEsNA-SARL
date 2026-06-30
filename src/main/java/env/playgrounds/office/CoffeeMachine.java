@@ -9,9 +9,9 @@ public class CoffeeMachine {
 
     private WsClient client;
 
-    public CoffeeMachine() {
+    public CoffeeMachine(int port) {
         try {
-            client = new WsClient(new URI("ws://localhost:8090"));
+            client = new WsClient(new URI("ws://localhost:" + port));
             client.setMsgHandler(new WsClientMsgHandler() {
                 @Override
                 public void handle_msg(String msg) { manage_msg(msg); }
