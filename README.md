@@ -15,20 +15,41 @@ VEsNA-SARL is a framework that enables SARL agents to be embodied inside a virtu
 > - Godot 4;
 > - SARL 0.15.1 .
 
-### Making a VEsNA agent in SARL
+## Creating a VEsNA agent in SARL
 
-Create a new .sarl agent for the physical body of the new agent, the agent should extend Officer.sarl, refer to agents Alice.sarl, Bob.sarl and so on.
-Once done you may change Officer.sarl's methods however you please to change the way the agent will act.
+### Infrastructure and initialization
 
-Note that most of the agent's skills are in the Skill file so if you want to drastically change something you may want to create a new skill (in a separate file or the same one) that extends an already existing one to change the methods and then install that skill to your agent
+The program starts in Boot.sarl which spawns the bridge agent which will be the agent connecting the actual agents to the virtual environment by sending and receiving JSON messages.
 
-The agent class BridgeAgent creates a connection between each agent and its body. The body implements a server with an address and a port.
+The bridge agent extends VesnaAgent which calls methods to spawn the actual agents and setup the environment by initializing any needed structure and variable. It uses an event to listen to the agents that to register to a port to connect to their virtual bodies.
 
-### Making the VEsNA agent body
+### Agent hierarchy & logic
+
+Officer.sarl extends TemplateAgent.sarl and adds more parameters through getAdditionalData(), it also sets more skills and listens to an event that receives a JSON message from the body telling the mind how to update it's parameters (like current location) letting it know if it still needs to move or has reached the destination.
+
+It also listens to an event TaskCompleted telling the agent what to do based on the currentTask.
+
+The individual agents like Alice.sarl can extend officer to add more personalized behaviour, they also initialize the agents by starting the first task; Officer is an abstract agent so we need real agents extending it, if you wanted to have the same behaviour for each agent you could also remove the abstract keyword from Officer and add the `on Initialize` starting the first task in it.
+
+### Communication and events
+
+The events needed to make the bridge work are: SendRequest, to send a request to the body, AnswerReceived to listen to the answer from the body, RegisterAgent to connect an agent to its desired port creating a websocket connection to its body.
+
+The office also implements new events to request a new task and tell when it's completed, along with specific events used for the coffee cup.
+
+### Navigation and capabilities
+
+The OfficeMap implements the connection between each location of the godot map for the office along with some methods to find the next correct step to take to move towards the destination.
+
+The skills include the navigation skill to compute the next step towards the destinations along with a skills for the working logic and a skill to use the coffee machine.
+
+The capacities declare the methods that the skills must implement.
+
+## Creating the VEsNA agent body
 
 To implement your VEsNA body you should implement a websocket Server. The server will receive these messages:
 
-```json
+```JSON
 {
     sender: "ag_name",
     receiver: "body",
@@ -40,17 +61,17 @@ To implement your VEsNA body you should implement a websocket Server. The server
 }
 ```
 
-The `sender` is set to the agent name in the mas. `msg_type` can be `walk`, `rotate` or `jump`. The `inner_type` is the inner type of the action.
+The `sender` is set to the agent name in the mas.
 
-Jump action has an empty data field.
+`msg_type` can be the type of action you implement, like `walk`. 
 
-Really only `walk` is used by SARL agents.
+The `inner_type` is the inner type of the action (like `goto`).
 
-#### Walk message data
+## Walk message data
 
-The data field for `goto` is:
+The data field for `goto` as the `inner_type` is:
 
-```json
+```JSON
 {
  	type: "goto",
     target: "target",
@@ -58,22 +79,24 @@ The data field for `goto` is:
 }
 ```
 
-## Try the playground
+The `target` is the destination you want the body to go to with that JSON message.
 
-In order to try the playground, you should:
-1. open sarlide (sarl's ide) and import everything from this repo;
-2. open Godot and import the playground (in case of a different playground do change the agents' map);
+## How to run
+
+In order to run the agents you should:
+1. import everything from this repo in sarlide (sarl's ide) and add your agents;
+2. create or import a scene in Godot (or Unity or another virtual environment) that implements the map and the body to receive the JSON messages as described above;
 3. start the main scene in godot with `F5`;
-4. right click on Boot.sarl in in sarl/vesna/agents -> run -> as SARL agent;
+4. right click on Boot.sarl in sarl/vesna/agents -> `run` -> `as SARL agent`.
 
-Sometimes after modifying some code and saving the ide may give false errors that will prevent the agents from running, in the upper toolbar click on project -> clean... -> select the project -> clean.
-If this still doesn't get rid of the errors then they're probably real errors that need to be fixed.
+Sometimes after editing some code and saving the ide may give false errors that will prevent the agents from running, in the upper toolbar click on `project` -> `clean...` -> select the project -> `clean`.
+
+If this still doesn't get rid of the errors then they're either real errors to be fixed or the ide needs to be restarted.
 
 ### You can also run SARL agents alongside JaCaMo agents
 
-1. open Godot and import the playground you want (unless already open from sarl running);
-2. start the main scene (unless already running from sarl);
-3. go in the mind folder;
-4. launch the project (with `gradle run`).
+1. create a Godot scene (or other) and run it;
+2. create your own jason agents;
+3. launch the agents from command line with `gradle run` by using a `build.gradle` file.
 
-Be careful not to start JaCaMo agents with a port already being used by a SARL agent (and viceversa)
+Be careful not to start JaCaMo agents with a port already being used by a SARL agent (and viceversa). You can start the agents in either order.

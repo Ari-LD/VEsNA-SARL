@@ -10,7 +10,6 @@ agent Boot {
 	on Initialize {
 		loggingName = "Boot Agent"
 		
-		// replace with the name of your bridge agent in vesna.bridge
 		spawn(OfficeBridgeAgent)
 
 		info("Program started. Boot agent shutting down.")
