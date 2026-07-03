@@ -23,7 +23,7 @@ This branch contains the Office implementation for Vesna, for the raw bridge tem
 
 The program starts in Boot.sarl which spawns the bridge agent which will be the agent connecting the actual agents to the virtual environment by sending and receiving JSON messages.
 
-The bridge agent extends VesnaAgent which calls methods to spawn the actual agents and setup the environment by initializing any needed structure and variable. It uses an event to listen to the agents that to register to a port to connect to their virtual bodies.
+The bridge agent extends VesnaAgent which calls methods to spawn the actual agents and setup the environment by initializing any needed structure and variable. It uses an event to listen to the agents that want to connect to a port to act on their virtual bodies.
 
 ### Agent hierarchy & logic
 
