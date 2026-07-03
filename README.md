@@ -2,6 +2,8 @@
 
 VEsNA-SARL is a framework that enables SARL agents to be embodied inside a virtual environment. This repository contains the bridge between agent minds and agent bodies. VEsNA-SARL was built to extend VEsNA from the single use of JaCaMo agents to allow the use of SARL agents (and both together) as well.
 
+For an implementation checkout the [Office branch](https://github.com/Ari-LD/VEsNA-SARL/tree/office)
+
 ![](./docs/vesna.gif)
 
 ## Usage
@@ -33,7 +35,7 @@ The sendWalkCommand() method in the skill creates a JSONObject to tell the agent
 
 The agent class BridgeAgent creates a connection between each agent and its body, to do so each agent will have to emit a RegisterAgent event. The body implements a server with an address and a port.
 
-To communicate with the virtual environment we need to send and receive json objects, we do so by emitting events to either tell the bridge to send an action request, to tell the agents what to do through an answer, or to register the agents to a port through the bridge.
+To communicate with the virtual environment we need to send and receive json objects, we do so by emitting events to either tell the bridge to send an action request, to tell the agents what to do through an answer, or to connect the agents to a port through the bridge.
 
 You can add more events in VesnaEvents.sarl (or a separate file); to use them you need to import them like any library.
 
