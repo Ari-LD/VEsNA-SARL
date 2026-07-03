@@ -2,6 +2,8 @@
 
 VEsNA-SARL is a framework that enables SARL agents to be embodied inside a virtual environment. This repository contains the bridge between agent minds and agent bodies. VEsNA-SARL was built to extend VEsNA from the single use of JaCaMo agents to allow the use of SARL agents (and both together) as well.
 
+This branch contains the Office implementation for Vesna, for the raw bridge template to create from scratch your own project [visit the main branch](https://github.com/Ari-LD/VEsNA-SARL/tree/main)
+
 ![](./docs/vesna.gif)
 
 ## Usage
