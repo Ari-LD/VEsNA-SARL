@@ -3,8 +3,7 @@ package vesna.events
 import env.playgrounds.office.CoffeeMachine
 import env.playgrounds.office.Cup
 
-// needs a better name, used to call the methods of the current task
-event TaskCompleted {
+event StartTask {
 	val taskName : String
 	
 	new(taskName : String) {

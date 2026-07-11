@@ -14,7 +14,7 @@ import vesna.skills.AgentCoffee
 
 import vesna.events.CupValidation
 import vesna.events.RequestTask
-import vesna.events.TaskCompleted
+import vesna.events.StartTask
 
 import vesna.map.NavigationModel
 import vesna.map.OfficeMap
@@ -74,13 +74,13 @@ abstract agent Officer extends TemplateAgent {
 	}
 	
 	override onArrivalAtTarget {
-		wake(new TaskCompleted(this.currentTask))
+		wake(new StartTask(this.currentTask))
 	}
 	
 	on RequestTask {
 		this.currentTask = occurrence.taskName
 		if (currentTask == "COFFEE" && !hasSkill(OfficeCoffee)) {
-			wake(new TaskCompleted("WORK"))
+			wake(new StartTask("WORK"))
 		} else {
 			val location = occurrence.location
 			info("Requesting task: " + this.currentTask + " at " + location)
@@ -88,7 +88,7 @@ abstract agent Officer extends TemplateAgent {
 		}
 	}
 	
-	on TaskCompleted {
+	on StartTask {
 		val currentTask = occurrence.taskName
 		
 		if (currentTask == "WORK") {

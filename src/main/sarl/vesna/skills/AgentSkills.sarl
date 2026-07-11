@@ -9,7 +9,7 @@ import vesna.events.RequestGrab
 import vesna.map.OfficeMap
 
 import vesna.events.RequestTask
-import vesna.events.TaskCompleted
+import vesna.events.StartTask
 
 import io.sarl.api.core.DefaultContextInteractions
 import io.sarl.api.core.Logging
@@ -103,7 +103,7 @@ skill AgentWork implements OfficeWork {
 				if (this.cup !== null && getCoffeeAmount <= 0) {
 					wake(new RequestTask("COFFEE", "coffee_machine"))
 				} else {
-					wake(new TaskCompleted("WORK"))
+					wake(new StartTask("WORK"))
 				}
 			]
 		}
