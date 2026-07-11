@@ -27,11 +27,11 @@ The bridge agent extends VesnaAgent which calls methods to spawn the actual agen
 
 ### Agent hierarchy & logic
 
-Officer.sarl extends TemplateAgent.sarl and adds more parameters through getAdditionalData(), it also sets more skills and listens to an event that receives a JSON message from the body telling the mind how to update it's parameters (like current location) letting it know if it still needs to move or has reached the destination.
+Worker.sarl extends TemplateAgent.sarl and adds more parameters through getAdditionalData(), it also sets more skills and listens to an event that receives a JSON message from the body telling the mind how to update it's parameters (like current location) letting it know if it still needs to move or has reached the destination.
 
 It also listens to an event TaskCompleted telling the agent what to do based on the currentTask.
 
-The individual agents like Alice.sarl can extend officer to add more personalized behaviour, they also initialize the agents by starting the first task; Officer is an abstract agent so we need real agents extending it, if you wanted to have the same behaviour for each agent you could also remove the abstract keyword from Officer and add the `on Initialize` starting the first task in it.
+The individual agents like Alice.sarl can extend Worker to add more personalized behaviour, they also initialize the agents by starting the first task; Worker is an abstract agent so we need real agents extending it, if you wanted to have the same behaviour for each agent you could also remove the abstract keyword from Worker and add the `on Initialize` starting the first task in it.
 
 ### Communication and events
 

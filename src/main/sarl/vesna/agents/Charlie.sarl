@@ -8,7 +8,7 @@ import vesna.capacities.OfficeWork
 import vesna.events.RequestTask
 import io.sarl.api.core.Behaviors
 
-agent Charlie extends Officer {
+agent Charlie extends Worker {
 	uses Behaviors, Logging, Schedules, OfficeWork, DefaultContextInteractions
 
 	on Initialize {

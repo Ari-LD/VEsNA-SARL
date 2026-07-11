@@ -21,7 +21,7 @@ import vesna.map.OfficeMap
 
 import org.json.JSONObject
 
-abstract agent Officer extends TemplateAgent {
+abstract agent Worker extends TemplateAgent {
 	uses Behaviors, Logging, VesnaNavigationCapacity, OfficeWork, OfficeCoffee, DefaultContextInteractions
 
 	protected var myOffice : String
