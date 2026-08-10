@@ -20,33 +20,27 @@ import org.json.JSONObject
 
 abstract agent VesnaAgent {
 	uses Logging, InnerContextAccess, Lifecycle
-	
+
 	var connections : Map<String, WsClient> = new HashMap
-	
+
 	on Initialize {
 		loggingName = "BridgeAgent"
         info("trying to connect to Godot...")
         
         spawnAgents
-        setupEnvironment
+		setupEnvironment
 	}
 
-	// will be used to spawn agents
-	// note that this (bridge) agent expects the agents to be spawned in its inner context
-	// if you want to have the agents in the same space just spawn them without any extra innerContext stuff and
-	// edit the emit in RegisterAgent to only emit the event without the extra stuff ( 'emit(new AnswerReceived(json, msg))' )
 	def spawnAgents() {}
-	
-	// for extra stuff you may need for your environment and agents
+
 	def setupEnvironment() {}
 
-	// creates a connection between the agent on the specific port and the environment
 	on RegisterAgent [occurrence.myName !== null] {
-		try{
+		try {
 			val name = occurrence.myName
 			val uri = new URI("ws://localhost:" + occurrence.port)
 			val client = new WsClient(uri)
-	
+
 			client.setMsgHandler(new WsClientMsgHandler {
 				override handle_msg(msg : String) {
 					info("Received from godot: " + msg)
@@ -55,19 +49,19 @@ abstract agent VesnaAgent {
 						getInnerContext.getDefaultSpace.emit(getID, new AnswerReceived(json, msg))
 					} catch (e : Exception) {
 						error("failed to parse message from godot: " + msg)
-							}
+					}
 				}
-	
+
 				override handle_error(e : Exception) {
 					error("WS ERROR: " + e.message)
 				}
 			})
-			
+
 			client.connectBlocking()
-	
+
 			if (client.isOpen) {
 				info("Bridge is open. waiting for agent requests")
-					} else {
+			} else {
 				error("connection failed. is godot running?")
 			}
 			
@@ -80,16 +74,15 @@ abstract agent VesnaAgent {
 		}
 	}
 
-	// extra stuff for when the agent connects
-	def onAgentConnected(occ : RegisterAgent) {}
-	
-	// sends a json package to the virtual environment
+	def onAgentConnected(occ : RegisterAgent) {
+	}
+
 	on SendRequest [occurrence.type == "walk"] {
 		val name = occurrence.data.optString("sender")
 		val client = connections.get(name)
-		
+
 		info("Bridge sending JSON: " + occurrence.data.toString())
-		
+
 		if (client !== null && client.isOpen) {
 			val messageToSend = occurrence.data.toString
 			client.send(messageToSend)
