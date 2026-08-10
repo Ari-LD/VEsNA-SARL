@@ -5,7 +5,7 @@ import env.playgrounds.office.Cup
 
 event StartTask {
 	val taskName : String
-	
+
 	new(taskName : String) {
 		this.taskName = taskName
 	}
@@ -14,7 +14,7 @@ event StartTask {
 event RequestTask {
 	val taskName : String
 	val location : String
-	
+
 	new(taskName : String, location : String) {
 		this.taskName = taskName
 		this.location = location
@@ -24,7 +24,7 @@ event RequestTask {
 event RequestGrab {
 	val agentName : String
 	val cupName : String
-	
+
 	new(requester : String, cupName : String) {
 		this.agentName = requester
 		this.cupName = cupName
@@ -40,10 +40,10 @@ event GrabGranted {
 	}
 }
 
-//useful to implement logic to release a cup
+// useful to implement logic to release a cup
 event RequestRelease {
 	val cupName : String
-	
+
 	new(cupName : String) {
 		this.cupName = cupName
 	}
@@ -54,7 +54,7 @@ event CupValidation {
 	val cupObject : Cup
 	val isAvailable : boolean
 	val machine : CoffeeMachine
-		
+
 	new(cup : String, cupObject : Cup, isAvailable : boolean, machine : CoffeeMachine) {
 		this.cup = cup
 		this.cupObject = cupObject

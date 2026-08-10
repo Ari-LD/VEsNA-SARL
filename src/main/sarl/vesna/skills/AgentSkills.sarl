@@ -19,36 +19,16 @@ import io.sarl.api.core.Behaviors
 import env.playgrounds.office.CoffeeMachine
 import env.playgrounds.office.Cup
 
-skill AgentNavigation extends VesnaNavigationSkill {
-    uses DefaultContextInteractions, Logging
-
-    var officeMap : OfficeMap
-    
-	new (myName : String, officeMap : OfficeMap) {
-		super(myName, officeMap)
-	}
-	
-	def getOfficeMap : OfficeMap {
-		this.officeMap
-	}
-	
-    override computeNextStep : String {
-		var myRoom = getOfficeMap.getParentRegion(getCurrentLoc()) ?: getCurrentLoc()
-		var targetRoom = getOfficeMap.getParentRegion(getTargetLoc) ?: getTargetLoc
-		return getOfficeMap.getNextStep(myRoom, targetRoom)
-    }
-}
-
 skill AgentWork implements OfficeWork {
 	uses Logging, VesnaNavigationCapacity, Schedules, DefaultContextInteractions, Behaviors
 
 	var coffeeAmount : int = 0
-	
+
 	val assignedDesk : String
 	var cup : String
 
 	val officeMap : OfficeMap
-	
+
 	new (desk : String, cup : String, officeMap : OfficeMap) {
 		this.assignedDesk = desk
 		this.cup = cup
@@ -58,7 +38,7 @@ skill AgentWork implements OfficeWork {
 	def getOfficeMap : OfficeMap {
 		this.officeMap
 	}
-	
+
 	def getAssignedDesk : String {
 		this.assignedDesk
 	}
@@ -75,16 +55,16 @@ skill AgentWork implements OfficeWork {
 		this.coffeeAmount = Math.max(0, this.coffeeAmount + refill)
 		info("changing coffee amount to " + this.coffeeAmount)
 	}
-	
-	/**
+
+	/** 
 	 * makes the agent print that it's working
 	 * else calls for the agent to move to its desk
 	 */
 	def work {
 		if (isAtDesk) {
 			info("I am working...")
-			val workTime = Math.max(100, getCoffeeAmount*500)
-			
+			val workTime = Math.max(100, getCoffeeAmount * 500)
+
 			in(workTime) [
 				if (hasSkill(OfficeCoffee) && this.cup !== null) {
 					setCoffeeAmount(-4)
@@ -109,13 +89,13 @@ skill AgentWork implements OfficeWork {
 		}
 	}
 
-	/**
+	/** 
 	 * returns true if the agent is at its desk, otherwise false
 	 */
 	def isAtDesk : boolean {
 		val currentPosition : String = getCurrentLoc()
-		
-		//if same then currentPos == desk -> true, else false
+
+		// if same then currentPos == desk -> true, else false
 		val result = getOfficeMap.isSameLocation(currentPosition, getAssignedDesk)
 		info("current position: " + getCurrentLoc() + " --- my desk: " + getAssignedDesk)
 		
@@ -125,12 +105,12 @@ skill AgentWork implements OfficeWork {
 
 skill AgentCoffee implements OfficeCoffee {
 	uses Logging, VesnaNavigationCapacity, DefaultContextInteractions, Behaviors, OfficeWork, Schedules
-	
+
 	val cup : String
 	val cupObject : Cup
 	val machine : CoffeeMachine
 	val officeMap : OfficeMap
-	
+
 	new (cup : String, cupObject : Cup, machine : CoffeeMachine, officeMap : OfficeMap) {
 		this.cup = cup
 		this.cupObject = cupObject
@@ -141,29 +121,29 @@ skill AgentCoffee implements OfficeCoffee {
 	def getOfficeMap : OfficeMap {
 		this.officeMap
 	}
-	
+
 	def getCup : String {
 		this.cup
 	}
-	
+
 	def getCupObject : Cup {
 		this.cupObject
 	}
-	
+
 	def getMachine : CoffeeMachine {
 		this.machine
 	}
-	
+
 	var isHoldingCup : boolean = false
-	
+
 	def getIsHoldingCup : boolean {
 		this.isHoldingCup
 	}
-	
+
 	def setIsHoldingCup(holding : boolean) {
 		this.isHoldingCup = holding
 	}
-	
+
 	def makeCoffee() {
 		if (!getIsHoldingCup) {
 			takeCup
@@ -173,28 +153,28 @@ skill AgentCoffee implements OfficeCoffee {
 		
 		if (getCurrentLoc() == "coffee_machine") {
 			getMachine.make_coffee(getCup)
-			setCoffeeAmount(10 - getCoffeeAmount) //amount + x = 10, this should always refill the variable to 10
-			//not sure if there's a way to check for the end of the artifact's animation
+			setCoffeeAmount(10 - getCoffeeAmount) // amount + x = 10, this should always refill the variable to 10
+			// not sure if there's a way to check for the end of the artifact's animation
 			in(5000) [
 				wake(new RequestTask("WORK", getAssignedDesk))
 			]
 		}
 	}
-	
+
 	def takeCup() {
 		info("taking cup: " + getCup)
 		getCupObject.grab(getMyName)
 		setIsHoldingCup(true)
 		emit(new RequestGrab(getMyName, getCup))
 	}
-	
+
 	/** 
 	 * returns true if the agent is at the coffee machine, otherwise false
 	 */
 	def isAtCoffeeMachine : boolean {
 		val currentPosition : String = getCurrentLoc()
 		val result = getOfficeMap.isSameLocation(currentPosition, "coffee_machine")
-		
+
 		return result
 	}
 }

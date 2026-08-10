@@ -20,44 +20,46 @@ abstract agent TemplateAgent {
 
 	protected var myName : String
 	protected var myPort : String
+	
+	val navgModel = new NavigationModel
 
 	on Initialize {
 		this.myPort = occurrence.parameters.get(0).toString
 		this.myName = occurrence.parameters.get(1).toString
 
 		loggingName = this.myName
-		
+
 		try {
 			emit(new RegisterAgent(this.myName, this.myPort, getAdditionalData(occurrence)))
 		} catch (e : Exception) {
 			error(e.message)
 		}
-		
+
 		info("I am: " + myName)
-		
+
 		setupSkills
 	}
-	
+
 	def getNavigationModel : NavigationModel {
-		return null
+		return this.navgModel
 	}
 
 	def getAdditionalData(occ : Initialize) : String {
 		return null
 	}
-	
+
 	def setupSkills : void {
 		val navModel = getNavigationModel
-		
+
 		if (navModel !== null) {
 			setSkill(new VesnaNavigationSkill(this.myName, navModel))
 		} else {
 			error("No navigation model provided")
 		}
 	}
-	
-	//this event relies on godot sending back the agent's name/id to work correctly
-	//checking with an if instead of a guard because mvn doesn't like optString in a guard
+
+	// this event relies on godot sending back the agent's name/id to work correctly
+	// checking with an if instead of a guard because mvn doesn't like optString in a guard
 	on AnswerReceived {
 		if (occurrence.jsonData.optString("sender") == this.myName) {
 			info(occurrence.msg)
@@ -78,5 +80,6 @@ abstract agent TemplateAgent {
 		}
 	}
 
-	def onArrivalAtTarget {}
+	def onArrivalAtTarget {
+	}
 }

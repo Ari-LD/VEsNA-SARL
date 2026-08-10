@@ -5,7 +5,7 @@ import org.json.JSONObject
 event SendRequest {
 	val type : String
 	val data : JSONObject
-	
+
 	new(type : String, data : JSONObject) {
 		this.type = type
 		this.data = data
@@ -25,9 +25,9 @@ event AnswerReceived {
 event RegisterAgent {
 	val myName : String
 	val port : String
-	//for extra data, put multiple things in a single string and separate them with a character like , or -
+	// for extra data, put multiple things in a single string and separate them with a character like , or -
 	val data : String
-	
+
 	new(myName : String, myPort : String, data : String) {
 		this.myName = myName
 		this.port = myPort

@@ -16,7 +16,6 @@ import vesna.events.CupValidation
 import vesna.events.RequestTask
 import vesna.events.StartTask
 
-import vesna.map.NavigationModel
 import vesna.map.OfficeMap
 
 import org.json.JSONObject
@@ -27,14 +26,14 @@ abstract agent Worker extends TemplateAgent {
 	protected var myOffice : String
 	protected var myDesk : String
 	protected var myCup : String = null
-	
+
 	protected var currentTask : String = "NONE"
 	
 	val officeMap = new OfficeMap
 
 	override getAdditionalData(occ : Initialize) : String {
 		val data = new JSONObject()
-		
+
 		if (occ.parameters.length > 3) {
 			this.myOffice = occ.parameters.get(2).toString
 			this.myDesk = occ.parameters.get(3).toString
@@ -53,30 +52,30 @@ abstract agent Worker extends TemplateAgent {
 
 	override setupSkills : void {
 		super.setupSkills
-		setSkill(new AgentWork(this.myDesk, this.myCup, this.officeMap))
-	}
-	
-	override getNavigationModel : NavigationModel {
-		return this.officeMap
-	}
-	
-	//if cup exists then sets the skill and the coffee machine instance
-	on CupValidation [this.myCup !== null && occurrence.cup == this.myCup && occurrence.isAvailable == true] {
-		setSkill(new AgentCoffee(this.myCup, occurrence.cupObject, occurrence.machine, this.officeMap))
+		setSkill(new AgentWork(this.myDesk, this.myCup, getOfficeMap))
 	}
 
-	//this second event is only for if I want the agent to write this message if the cup doesn't exist
-	//otherwise we could remove this one and also remove the boolean from the event
+	def getOfficeMap : OfficeMap {
+		return this.officeMap
+	}
+
+	// if cup exists then sets the skill and the coffee machine instance
+	on CupValidation [this.myCup !== null && occurrence.cup == this.myCup && occurrence.isAvailable == true] {
+		setSkill(new AgentCoffee(this.myCup, occurrence.cupObject, occurrence.machine, getOfficeMap))
+	}
+
+	// this second event is only for if I want the agent to write this message if the cup doesn't exist
+	// otherwise we could remove this one and also remove the boolean from the event
 	on CupValidation [this.myCup !== null && occurrence.cup == this.myCup && occurrence.isAvailable == false] {
 		info("my cup doesn't exist")
 		
 		setCup(null)
 	}
-	
+
 	override onArrivalAtTarget {
 		wake(new StartTask(this.currentTask))
 	}
-	
+
 	on RequestTask {
 		this.currentTask = occurrence.taskName
 		if (currentTask == "COFFEE" && !hasSkill(OfficeCoffee)) {
@@ -87,10 +86,10 @@ abstract agent Worker extends TemplateAgent {
 			goTo(location)
 		}
 	}
-	
+
 	on StartTask {
-		val currentTask = occurrence.taskName
-		
+		this.currentTask = occurrence.taskName
+
 		if (currentTask == "WORK") {
 			info("Arrived at my desk, working.")
 			work()

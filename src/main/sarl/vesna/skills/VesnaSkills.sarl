@@ -63,7 +63,7 @@ skill VesnaNavigationSkill implements VesnaNavigationCapacity {
 		setTargetLoc(target)
 		if (getCurrentLoc() == "unknown") {
 			info("Location unknown. Attempting to move to " + target + " to sync.")
-            sendWalkCommand(target)
+			sendWalkCommand(target)
 			return
 		}
 
@@ -81,7 +81,7 @@ skill VesnaNavigationSkill implements VesnaNavigationCapacity {
 			sendWalkCommand(getTargetLoc)
 		}
 	}
-	
+
 	// override this method to add your own logic to get the correct next step the agent needs to do
 	protected def computeNextStep() : String {
 		return getTargetLoc

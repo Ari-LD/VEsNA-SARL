@@ -20,28 +20,27 @@ import org.json.JSONObject
 
 abstract agent VesnaAgent {
 	uses Logging, InnerContextAccess, Lifecycle
-	
+
 	var connections : Map<String, WsClient> = new HashMap
-	
+
 	on Initialize {
 		loggingName = "BridgeAgent"
         info("trying to connect to Godot...")
         
         spawnAgents
-        setupEnvironment
+		setupEnvironment
 	}
 
 	def spawnAgents() {}
-	
+
 	def setupEnvironment() {}
 
-
 	on RegisterAgent [occurrence.myName !== null] {
-		try{
+		try {
 			val name = occurrence.myName
 			val uri = new URI("ws://localhost:" + occurrence.port)
 			val client = new WsClient(uri)
-	
+
 			client.setMsgHandler(new WsClientMsgHandler {
 				override handle_msg(msg : String) {
 					info("Received from godot: " + msg)
@@ -50,19 +49,19 @@ abstract agent VesnaAgent {
 						getInnerContext.getDefaultSpace.emit(getID, new AnswerReceived(json, msg))
 					} catch (e : Exception) {
 						error("failed to parse message from godot: " + msg)
-							}
+					}
 				}
-	
+
 				override handle_error(e : Exception) {
 					error("WS ERROR: " + e.message)
 				}
 			})
-			
+
 			client.connectBlocking()
-	
+
 			if (client.isOpen) {
 				info("Bridge is open. waiting for agent requests")
-					} else {
+			} else {
 				error("connection failed. is godot running?")
 			}
 			
@@ -75,20 +74,20 @@ abstract agent VesnaAgent {
 		}
 	}
 
-	def onAgentConnected(occ : RegisterAgent) {}
-	
-	
+	def onAgentConnected(occ : RegisterAgent) {
+	}
+
 	on SendRequest [occurrence.type == "walk"] {
 		val name = occurrence.data.optString("sender")
 		val client = connections.get(name)
-		
+
 		info("Bridge sending JSON: " + occurrence.data.toString())
-		
+
 		if (client !== null && client.isOpen) {
 			val messageToSend = occurrence.data.toString
 			client.send(messageToSend)
 		} else {
 			error("Cannot send action. Socket is closed")
-			}
+		}
 	}
 }

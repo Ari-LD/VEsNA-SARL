@@ -19,7 +19,6 @@ class OfficeMap extends NavigationModel {
 		"boss_1_desk" -> "boss_office_1",
 		"boss_2_desk" -> "boss_office_2",
 		"boss_3_desk" -> "boss_office_2",
-		
 		"senior_1_desk" -> "senior_office_1",
 		"senior_2_desk" -> "senior_office_1",
 		"senior_3_desk" -> "senior_office_2",
@@ -60,65 +59,6 @@ class OfficeMap extends NavigationModel {
 		"door_outside_1" -> #["open_office", "outside"],
 		"door_outside_2" -> #["open_office", "outside"]
 	}
-
-	def findDoorBetween(room1 : String, room2 : String) : String {
-		for (entry : PO.entrySet) {
-			val connections = entry.value
-			if(connections.contains(room1) && connections.contains(room2)) return entry.key
-		}
-		return null
-	}
-
-	def findExitDoor(room : String) : String {
-		for (entry : PO.entrySet) {
-			if(entry.value.contains(room)) return entry.key
-		}
-		return null
-	}
-
-	@SuppressWarnings("null_safe_feature_call_on_primitive_valued_feature")
-	override getNextStep(currentRoom : String, targetRoom : String) : String {
-		if(currentRoom == targetRoom) return null
-
-		// are we currently AT a door? if so, move to the room we aren't in yet
-		if (PO.containsKey(currentRoom)) {
-			val rooms = PO.get(currentRoom)
-			// every door connects 2 places to each other so we just need the one of the two we're not in, no need to do extra checks for parent regions up to the target room
-			for (room : rooms) {
-				if(room != currentRoom) return room
-			}
-		}
-
-		// check for a direct door
-		val door = findDoorBetween(getParentRegion(currentRoom) ?: currentRoom, targetRoom)
-		if(door !== null) return door
-
-		// check for an archway (EC)
-        if(EC.get(currentRoom)?.contains(targetRoom)) return targetRoom
-
-		// if in a private office, go to the nearest connector
-		if (currentRoom != "corridor" && currentRoom != "open_office") {
-			return findExitDoor(currentRoom)
-		}
-
-		// if in corridor but target is in outside, go to open_office
-		if (currentRoom == "corridor") {
-			val targetSuper = getParentRegion(targetRoom)
-			if (targetSuper == "open_office" || targetRoom == "open_office") {
-				return "open_office"
-            }
-        }
-        
-        // if in open_office but target is in common, go to corridor
-		if (currentRoom == "open_office") {
-			val targetSuper = getParentRegion(targetRoom)
-			if (targetSuper == "corridor" || targetRoom == "corridor") {
-				return "corridor"
-			}
-		}
-
-        return null
-    }
 
 	/** 
 	 * Helper function: Get the room a desk is in
