@@ -29,7 +29,7 @@ Note that most of the agent's skills (it's navigation capacity to move around) a
 
 The default skill package implements a common navigation template to allow the agents to move in a virtual environment from a currentLoc(ation) to a targetLoc(ation), with a pendingLoc(ation) being the various locations the agent moves through from start to finish.
 
-You will need to implement your own nagivation logic for the agent in computeNextStep() based on your personal project, you can help yourself by using NavigationModel.sarl to put your nagivation functions in to call from the skill.
+You will need to implement your own nagivation logic for the agent in computeNextStep() based on your personal project, you can help yourself by using NavigationModel.sarl to put your navigation functions in to call from the skill.
 
 The sendWalkCommand() method in the skill creates a JSONObject to tell the agent's body in the virtual environment where to move to by emitting a request event to the bridge which will send the message.
 
